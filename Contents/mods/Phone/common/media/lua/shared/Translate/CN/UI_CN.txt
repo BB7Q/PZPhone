@@ -6,4 +6,17 @@ UI_Phone = {
 	UI_Phone_Settings = "设置",
 	UI_Phone_Title = "手机",
 	UI_Phone_Battery = "电量：100%",
+	UI_Phone_BackToHome = "返回主页",
+	UI_Phone_NoApps = "暂无应用",
+}
+
+UI_ExampleApp = {
+	UI_ExampleApp_Name = "示例应用",
+	UI_ExampleApp_Title = "示例应用",
+	UI_ExampleApp_Button1 = "功能按钮1",
+	UI_ExampleApp_Button2 = "功能按钮2",
+	UI_ExampleApp_Info = "点击上方的按钮测试功能。操作结果将显示在这里。",
+	UI_ExampleApp_Close = "关闭应用",
+	UI_ExampleApp_Action1 = "功能1已执行",
+	UI_ExampleApp_Action2 = "功能2已执行",
 }

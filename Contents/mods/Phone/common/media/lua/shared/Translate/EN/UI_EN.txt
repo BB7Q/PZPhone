@@ -6,4 +6,17 @@ UI_Phone = {
 	UI_Phone_Settings = "Settings",
 	UI_Phone_Title = "Phone",
 	UI_Phone_Battery = "Battery: 100%",
+	UI_Phone_BackToHome = "Back to Home",
+	UI_Phone_NoApps = "No Apps Available",
+}
+
+UI_ExampleApp = {
+	UI_ExampleApp_Name = "Example App",
+	UI_ExampleApp_Title = "Example Application",
+	UI_ExampleApp_Button1 = "Function Button 1",
+	UI_ExampleApp_Button2 = "Function Button 2",
+	UI_ExampleApp_Info = "Click the buttons above to test functions. Operation results will be displayed here.",
+	UI_ExampleApp_Close = "Close App",
+	UI_ExampleApp_Action1 = "Function 1 Executed",
+	UI_ExampleApp_Action2 = "Function 2 Executed",
 }
