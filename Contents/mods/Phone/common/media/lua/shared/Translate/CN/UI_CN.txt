@@ -1,0 +1,9 @@
+UI_Phone = {
+	UI_Phone_OpenPhone = "打开手机",
+	UI_Phone_Close = "关闭",
+	UI_Phone_Contacts = "联系人",
+	UI_Phone_Messages = "短信",
+	UI_Phone_Settings = "设置",
+	UI_Phone_Title = "手机",
+	UI_Phone_Battery = "电量：100%",
+}

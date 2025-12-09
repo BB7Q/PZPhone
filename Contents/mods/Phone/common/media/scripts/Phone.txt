@@ -1,0 +1,12 @@
+module Base
+{
+	item Phone
+	{
+		DisplayName = 手机,
+		DisplayCategory = Electronics,
+		Type = Normal,
+		Icon = phone_icon,
+		Weight = 0.5,
+		WorldStaticModel = phone_icon,
+	}
+}

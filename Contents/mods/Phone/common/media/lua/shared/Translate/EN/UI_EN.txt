@@ -1,0 +1,9 @@
+UI_Phone = {
+	UI_Phone_OpenPhone = "Open Phone",
+	UI_Phone_Close = "Close",
+	UI_Phone_Contacts = "Contacts",
+	UI_Phone_Messages = "Messages",
+	UI_Phone_Settings = "Settings",
+	UI_Phone_Title = "Phone",
+	UI_Phone_Battery = "Battery: 100%",
+}
