@@ -19,7 +19,7 @@ function PhoneFrameworkCore.App:new(name, icon, displayName, description)
     
     -- 基本信息
     obj.name = name or "UnknownApp"
-    obj.icon = icon or ""
+    obj.icon = icon or nil
     obj.displayName = displayName or name
     obj.description = description or ""
     
@@ -230,48 +230,105 @@ function PhoneFrameworkCore.updateAppGrid()
     -- 清除现有图标
     PhoneFrameworkCore.clearAppIcons()
     
-    -- 网格配置
-    local gridColumns = 4
-    local gridRows = 3
-    local iconSize = 150
-    local iconSpacing = 30
+    -- 网格配置：6列5行
+    local gridColumns = 6
+    local gridRows = 5
     
-    -- 计算网格起始位置
-    local gridWidth = (iconSize + iconSpacing) * gridColumns - iconSpacing
-    local gridHeight = (iconSize + iconSpacing) * gridRows - iconSpacing
+    -- 计算等分单元格大小（考虑内屏边距）
+    local horizontalMargin = 40  -- 水平边距
+    local verticalMargin = 40    -- 垂直边距
+    local availableWidth = PhoneFrameworkCore.phoneWindow.innerWidth - horizontalMargin * 2
+    local availableHeight = PhoneFrameworkCore.phoneWindow.innerHeight - verticalMargin * 2
+    
+    local cellWidth = math.floor(availableWidth / gridColumns)  -- 单元格宽度
+    local cellHeight = math.floor(availableHeight / gridRows)   -- 单元格高度
+    
+    -- 图标大小（固定80x80像素）
+    local iconSize = 80
+    
+    -- 计算网格起始位置（居中）
+    local gridWidth = cellWidth * gridColumns
+    local gridHeight = cellHeight * gridRows
     
     local gridStartX = PhoneFrameworkCore.phoneWindow.innerX + (PhoneFrameworkCore.phoneWindow.innerWidth - gridWidth) / 2
-    local gridStartY = PhoneFrameworkCore.phoneWindow.innerY + 100
+    local gridStartY = PhoneFrameworkCore.phoneWindow.innerY + verticalMargin
+    
+    -- 调试信息
+    print(string.format("[PhoneFrameworkCore] Grid layout: %dx%d cells, cell=%dx%d, icon=%d, grid=%dx%d, inner=%dx%d", 
+        gridColumns, gridRows, cellWidth, cellHeight, iconSize, gridWidth, gridHeight, 
+        PhoneFrameworkCore.phoneWindow.innerWidth, PhoneFrameworkCore.phoneWindow.innerHeight))
     
     -- 创建应用图标按钮
     for i, app in ipairs(PhoneFrameworkCore.apps) do
         local row = math.floor((i - 1) / gridColumns)
         local col = (i - 1) % gridColumns
         
-        local x = gridStartX + col * (iconSize + iconSpacing)
-        local y = gridStartY + row * (iconSize + iconSpacing)
+        -- 计算单元格位置
+        local cellX = gridStartX + col * cellWidth
+        local cellY = gridStartY + row * cellHeight
+        
+        -- 计算图标在单元格内的位置（居中）
+        local iconX = cellX + (cellWidth - iconSize) / 2
+        local iconY = cellY + (cellHeight - iconSize) / 3  -- 图标在单元格上1/3位置
         
         -- 创建应用图标按钮
-        local appButton = ISButton:new(x, y, iconSize, iconSize, app.displayName, 
+        local appButton = ISButton:new(iconX, iconY, iconSize, iconSize, "", 
             PhoneFrameworkCore.phoneWindow, PhoneFrameworkCore.onAppIconClick)
         appButton:initialise()
         appButton.app = app
         appButton.target = PhoneFrameworkCore.phoneWindow
-        appButton.backgroundColor = {r=0.2, g=0.4, b=0.8, a=0.8}
-        appButton.borderColor = {r=0.1, g=0.2, b=0.4, a=1}
+        appButton.backgroundColor = {r=0, g=0, b=0, a=0}  -- 透明背景
+        appButton.borderColor = {r=0, g=0, b=0, a=0}      -- 透明边框
         appButton.tooltip = app.displayName
+        
+        -- 设置应用图标纹理
+        local iconTexture = nil
+        if app.icon then
+            iconTexture = app.icon
+        else
+            -- 使用默认应用图标
+            iconTexture = getTexture("media/ui/phone_app_icon.png")
+        end
+        appButton.texture = iconTexture
+        
+        -- 设置按钮的渲染函数来显示图标
+        function appButton:prerender()
+            if self.texture then
+                self:drawTexture(self.texture, 0, 0, 1, 1, 1, 1)
+            end
+        end
         
         PhoneFrameworkCore.phoneWindow:addChild(appButton)
         table.insert(PhoneFrameworkCore.appIcons, appButton)
+        
+        -- 存储应用标题信息，在窗口渲染时绘制（而不是按钮内）
+        PhoneFrameworkCore.phoneWindow.appTitles = PhoneFrameworkCore.phoneWindow.appTitles or {}
+        table.insert(PhoneFrameworkCore.phoneWindow.appTitles, {
+            text = app.displayName,
+            x = cellX,
+            y = cellY + cellHeight - 20,
+            width = cellWidth
+        })
     end
     
     -- 如果没有应用，显示提示信息
     if #PhoneFrameworkCore.apps == 0 then
-        local noAppsLabel = ISLabel:new(gridStartX, gridStartY + 100, 400, 
-            getText("UI_Phone_NoApps"), 0.6, 0.6, 0.6, 1, UIFont.Medium, true)
-        noAppsLabel:initialise()
-        PhoneFrameworkCore.phoneWindow:addChild(noAppsLabel)
-        table.insert(PhoneFrameworkCore.appIcons, noAppsLabel)
+        PhoneFrameworkCore.phoneWindow.noAppsText = getText("UI_Phone_NoApps")
+        PhoneFrameworkCore.phoneWindow.noAppsX = gridStartX
+        PhoneFrameworkCore.phoneWindow.noAppsY = gridStartY + gridHeight + 20
+        
+        -- 修改手机窗口的渲染函数来显示提示信息
+        local originalRender = PhoneFrameworkCore.phoneWindow.prerender
+        function PhoneFrameworkCore.phoneWindow:prerender()
+            originalRender(self)
+            
+            -- 绘制无应用提示
+            if self.noAppsText then
+                local textWidth = getTextManager():MeasureStringX(UIFont.Medium, self.noAppsText)
+                local textX = self.noAppsX + (400 - textWidth) / 2
+                self:drawText(self.noAppsText, textX, self.noAppsY, 0.6, 0.6, 0.6, 1, UIFont.Medium)
+            end
+        end
     end
 end
 
@@ -325,32 +382,63 @@ end
 
 -- 手机窗口渲染函数
 function PhoneFrameworkCore.renderPhoneWindow()
-    -- 绘制手机背景图片
+    -- 绘制手机背景图片（包含壁纸）
     if PhoneFrameworkCore.phoneWindow.backgroundTexture then
         PhoneFrameworkCore.phoneWindow:drawTexture(
             PhoneFrameworkCore.phoneWindow.backgroundTexture, 0, 0, 1, 1, 1, 1
         )
     end
     
-    -- 绘制内屏区域
-    PhoneFrameworkCore.phoneWindow:drawRect(
-        PhoneFrameworkCore.phoneWindow.innerX, PhoneFrameworkCore.phoneWindow.innerY,
-        PhoneFrameworkCore.phoneWindow.innerWidth, PhoneFrameworkCore.phoneWindow.innerHeight,
-        0.95, 0.95, 0.95, 0.9
-    )
-    
-    -- 绘制内屏边框
+    -- 绘制内屏边框（保留边框，移除白色背景）
     PhoneFrameworkCore.phoneWindow:drawRectBorder(
         PhoneFrameworkCore.phoneWindow.innerX, PhoneFrameworkCore.phoneWindow.innerY,
         PhoneFrameworkCore.phoneWindow.innerWidth, PhoneFrameworkCore.phoneWindow.innerHeight,
         0.2, 0.2, 0.2, 1
     )
+    
+    -- 绘制应用标题（白色文字，在壁纸上清晰可见）
+    if PhoneFrameworkCore.phoneWindow.appTitles then
+        for _, titleInfo in ipairs(PhoneFrameworkCore.phoneWindow.appTitles) do
+            local textWidth = getTextManager():MeasureStringX(UIFont.Small, titleInfo.text)
+            local textX = titleInfo.x + (titleInfo.width - textWidth) / 2
+            PhoneFrameworkCore.phoneWindow:drawText(titleInfo.text, textX, titleInfo.y, 1, 1, 1, 1, UIFont.Small)
+        end
+    end
+    
+    -- 绘制无应用提示（如果有，也改为白色）
+    if PhoneFrameworkCore.phoneWindow.noAppsText then
+        local textWidth = getTextManager():MeasureStringX(UIFont.Medium, PhoneFrameworkCore.phoneWindow.noAppsText)
+        local textX = PhoneFrameworkCore.phoneWindow.noAppsX + (400 - textWidth) / 2
+        PhoneFrameworkCore.phoneWindow:drawText(PhoneFrameworkCore.phoneWindow.noAppsText, textX, PhoneFrameworkCore.phoneWindow.noAppsY, 1, 1, 1, 1, UIFont.Medium)
+    end
+end
+
+-- 创建测试应用
+function PhoneFrameworkCore.createTestApps()
+    -- 清除现有应用
+    PhoneFrameworkCore.apps = {}
+    
+    -- 创建30个测试应用（6列×5行=30个位置）
+    for i = 1, 30 do
+        local app = PhoneFrameworkCore.App:new(
+            "TestApp" .. i,
+            "media/ui/app_icon.png",  -- 使用默认图标
+            "App " .. i,
+            "测试应用 " .. i
+        )
+        PhoneFrameworkCore.registerApp(app)
+    end
+    
+    print("[PhoneFrameworkCore] Created 30 test apps for grid layout testing")
 end
 
 -- 初始化函数
 function PhoneFrameworkCore.init()
     -- 注册右键菜单事件
     Events.OnFillInventoryObjectContextMenu.Add(PhoneFrameworkCore.onPhoneContextMenu)
+    
+    -- 创建测试应用（用于布局验证）
+    -- PhoneFrameworkCore.createTestApps()
     
     print("[PhoneFrameworkCore] Phone framework core initialized")
     

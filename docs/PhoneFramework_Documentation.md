@@ -30,10 +30,10 @@ setmetatable(MyApp.App, {__index = PhoneFrameworkCore.App})
 -- 应用构造函数
 function MyApp.App:new()
     local obj = PhoneFrameworkCore.App:new(
-        "MyApp",                    -- 应用ID
-        "",                         -- 图标路径
-        "My App",                   -- 显示名称
-        "这是一个示例应用"           -- 描述
+        "MyApp",                           -- 应用ID
+        getTexture("media/ui/MyApp_icon.png"), -- 图标纹理 (80x80像素)
+        getText("UI_MyApp_Name"),          -- 显示名称 (国际化)
+        getText("UI_MyApp_Description")     -- 描述 (国际化)
     )
     setmetatable(obj, {__index = self})
     
@@ -182,6 +182,53 @@ end
 - 使用 `getText()` 函数获取翻译文本
 - 在翻译文件中定义所有UI文本
 
+## 图标纹理规范
+
+### 应用图标要求
+- **尺寸**: 应用图标必须为 80×80 像素
+- **格式**: PNG格式，支持透明背景
+- **路径**: 图标文件应放在应用的 `media/ui/` 目录下
+- **命名**: 建议使用应用ID命名，如 `MyApp_icon.png`
+- **加载**: 使用 `getTexture()` 函数加载图标纹理，而不是直接使用路径
+
+### 图标示例代码
+```lua
+-- 应用构造函数中设置图标纹理
+function MyApp.App:new()
+    local obj = PhoneFrameworkCore.App:new(
+        "MyApp",                           -- 应用ID
+        getTexture("media/ui/MyApp_icon.png"), -- 图标纹理 (80x80像素)
+        getText("UI_MyApp_Name"),          -- 显示名称 (国际化)
+        getText("UI_MyApp_Description")     -- 描述 (国际化)
+    )
+    setmetatable(obj, {__index = self})
+    
+    -- 应用特定属性
+    obj.customData = "示例数据"
+    
+    return obj
+end
+```
+
+### 图标设计建议
+1. **简洁性**: 保持图标简洁明了，避免过多细节
+2. **可识别性**: 确保图标在小尺寸下仍然清晰可辨
+3. **对比度**: 使用适当的对比度，确保在不同背景下可见
+4. **一致性**: 与游戏整体风格保持一致
+
+### 图标文件结构示例
+```
+mods/
+├── MyApp/
+│   ├── common/
+│   │   └── media/
+│   │       ├── ui/
+│   │       │   └── MyApp_icon.png      -- 80x80 应用图标
+│   │       └── lua/
+│   │           └── client/
+│   │               └── MyApp.lua
+```
+
 ## 示例应用结构
 
 ```
@@ -192,6 +239,8 @@ mods/
 │   ├── common/
 │   │   ├── mod.info
 │   │   └── media/
+│   │       ├── ui/
+│   │       │   └── MyApp_icon.png      -- 80x80 应用图标
 │   │       └── lua/
 │   │           ├── client/
 │   │           │   └── MyApp.lua

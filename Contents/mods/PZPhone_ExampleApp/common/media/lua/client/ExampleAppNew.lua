@@ -23,7 +23,7 @@ end
 function ExampleAppNew.App:new()
     local obj = PhoneFrameworkCore.App:new(
         "ExampleAppNew", 
-        "", 
+        getTexture("media/ui/app_icon.png"), 
         getText("UI_ExampleAppNew_Name"),
         getText("UI_ExampleAppNew_Description")
     )
