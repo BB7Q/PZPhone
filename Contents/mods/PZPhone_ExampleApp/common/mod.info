@@ -1,0 +1,4 @@
+name=PZPhone_ExampleApp
+id=PZPhone_ExampleApp
+require=\PZPhone
+description=手机框架示例应用
