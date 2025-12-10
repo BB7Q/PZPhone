@@ -1,5 +1,5 @@
--- PhoneWebView容器组件
--- 提供类似WebView的功能，包含返回、关闭按钮和标题栏
+-- PhoneWebView容器组件（现代化设计）
+-- 提供类似WebView的功能，支持自定义顶部栏和手势关闭
 -- 作为应用的基础容器
 
 PhoneWebView = {}
@@ -24,11 +24,14 @@ function PhoneWebView:new(x, y, width, height, parent)
     obj.panel:initialise()
     obj.panel.view = obj -- 设置回调引用
     
-    -- 创建头部区域
-    obj:createHeader()
-    
-    -- 创建内容区域
+    -- 创建全屏内容区域
     obj:createContentArea()
+    
+    -- 手势检测相关变量
+    obj.touchStartY = 0
+    obj.isDragging = false
+    obj.dragStartY = 0
+    obj.currentOffsetY = 0
     
     -- 设置渲染函数
     obj:setRenderFunction()
@@ -36,58 +39,83 @@ function PhoneWebView:new(x, y, width, height, parent)
     return obj
 end
 
--- 创建头部区域
-function PhoneWebView:createHeader()
-    local headerHeight = 40
-    
-    -- 头部面板
-    self.headerPanel = ISPanel:new(0, 0, self.width, headerHeight)
-    self.headerPanel:initialise()
-    self.headerPanel.backgroundColor = {r=0.85, g=0.85, b=0.85, a=0.9}
-    self.panel:addChild(self.headerPanel)
-    
-    -- 返回按钮
-    local backButton = ISButton:new(5, 5, 30, headerHeight - 10, "<", self.panel, self.onBack)
-    backButton:initialise()
-    backButton.backgroundColor = {r=0.7, g=0.7, b=0.7, a=0.8}
-    backButton.borderColor = {r=0.3, g=0.3, b=0.3, a=1}
-    backButton.tooltip = getText("UI_WebView_Back")
-    backButton.target = self
-    self.headerPanel:addChild(backButton)
-    self.backButton = backButton
-    
-    -- 关闭按钮
-    local closeButton = ISButton:new(self.width - 35, 5, 30, headerHeight - 10, "X", self.panel, self.onClose)
-    closeButton:initialise()
-    closeButton.backgroundColor = {r=0.8, g=0.2, b=0.2, a=0.8}
-    closeButton.borderColor = {r=0.5, g=0.1, b=0.1, a=1}
-    closeButton.tooltip = getText("UI_WebView_Close")
-    self.headerPanel:addChild(closeButton)
-    self.closeButton = closeButton
-    
-    -- 标题文本（使用drawText绘制）
-    self.title = "Untitled"
-    self.titleX = 40
-    self.titleY = 10
-    self.titleWidth = self.width - 80
-end
-
--- 创建内容区域
+-- 创建全屏内容区域
 function PhoneWebView:createContentArea()
-    local contentY = self.headerPanel.height
-    local contentHeight = self.height - contentY
-    
-    -- 内容面板
-    self.contentPanel = ISPanel:new(0, contentY, self.width, contentHeight)
+    -- 内容面板覆盖整个WebView
+    self.contentPanel = ISPanel:new(0, 0, self.width, self.height)
     self.contentPanel:initialise()
     self.contentPanel.backgroundColor = {r=0.95, g=0.95, b=0.95, a=0.9}
     self.panel:addChild(self.contentPanel)
+    
+    -- 创建底部关闭控件（大点击区域，小视觉线条）
+    self.closeControl = ISPanel:new(
+        (self.width - 80) / 2, 
+        self.height - 30, 
+        80, 20
+    )
+    self.closeControl:initialise()
+    self.closeControl.backgroundColor = {r=0, g=0, b=0, a=0} -- 透明背景
+    self.closeControl.borderColor = {r=0, g=0, b=0, a=0} -- 透明边框
+    self.closeControl.view = self -- 设置回调引用
+    self.panel:addChild(self.closeControl)
+    
+    -- 创建视觉线条（实际显示的线条）
+    self.closeLine = ISPanel:new(
+        (self.width - 80) / 2, 
+        self.height - 20, 
+        80, 3
+    )
+    self.closeLine:initialise()
+    self.closeLine.backgroundColor = {r=0.4, g=0.4, b=0.4, a=0.8}
+    self.closeLine.borderColor = {r=0.6, g=0.6, b=0.6, a=0.9}
+    self.panel:addChild(self.closeLine)
+    
+    -- 设置关闭控件的点击事件（修复self.view问题）
+    function self.closeControl:onMouseDown(x, y)
+        if self.view and self.view.performClose then
+            self.view:performClose()
+        end
+        return true
+    end
 end
 
--- 设置标题
-function PhoneWebView:setTitle(title)
-    self.title = title or "Untitled"
-    print("[PhoneWebView] Title set to: " .. self.title)
+-- 设置渲染函数
+function PhoneWebView:setRenderFunction()
+    self.panel.render = function()
+        self:render()
+    end
+end
+
+-- 渲染函数
+function PhoneWebView:render()
+    -- 绘制关闭控件文本
+    if self.closeText and self.closeControl then
+        self.closeControl:drawText(self.closeText, self.closeTextX, self.closeTextY, 1, 1, 1, 1, UIFont.Small)
+    end
+end
+
+-- 执行关闭操作
+function PhoneWebView:performClose()
+    print("[PhoneWebView] Performing close...")
+    
+    -- 查找应用或框架的回调函数
+    local callbackTarget = self.app or self.parent
+    if callbackTarget and callbackTarget.onWebViewClose then
+        callbackTarget:onWebViewClose(self)
+    else
+        -- 默认行为：返回主页
+        if self.app and self.app.onDestroy then
+            self.app:onDestroy()
+        end
+        if PhoneFrameworkCore and PhoneFrameworkCore.returnToHome then
+            PhoneFrameworkCore.returnToHome()
+        end
+    end
+end
+
+-- 编程式关闭方法（供应用调用）
+function PhoneWebView:close()
+    self:performClose()
 end
 
 -- 设置内容组件

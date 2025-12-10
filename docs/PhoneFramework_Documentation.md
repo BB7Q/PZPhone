@@ -10,7 +10,13 @@ PhoneFramework 是一个为 Project Zomboid 设计的手机应用框架，允许
 框架核心，负责应用管理、手机窗口显示和整体协调。
 
 ### 2. PhoneWebView
-应用容器组件，提供标题栏、返回和关闭按钮等功能。
+现代化应用容器组件，提供全屏内容区域和底部关闭控件，支持手势操作。
+
+**新特性:**
+- 现代化界面设计，简洁美观
+- 底部细长条关闭控件，视觉上更精致
+- 大点击区域设计，提升用户体验
+- 支持自定义关闭逻辑
 
 ### 3. 应用基类 (PhoneFrameworkCore.App)
 所有应用都应继承的基础类，提供标准的生命周期方法。
@@ -131,35 +137,101 @@ end
 -- 创建PhoneWebView
 local webView = PhoneWebView:new(x, y, width, height, parent)
 
--- 设置标题
-webView:setTitle("应用标题")
-
 -- 获取内容面板（用于放置应用UI）
 local contentPanel = webView:getContentPanel()
+
+-- 设置应用内容组件
+webView:setContent(component)
 
 -- 显示/隐藏
 webView:setVisible(true)
 webView:setVisible(false)
+
+-- 编程式关闭
+webView:close()
+
+-- 从UI管理器移除
+webView:removeFromUIManager()
 ```
 
-### 回调函数
+### 现代化关闭控件特性
 
+PhoneWebView采用现代化设计，关闭控件具有以下特点：
+- **视觉线条**: 80×3像素的细长条，位于底部20像素处
+- **大点击区域**: 80×20像素的透明区域，位于底部30像素处
+- **智能关闭**: 点击后自动调用应用或框架的关闭逻辑
+- **自定义回调**: 支持 `onWebViewClose` 自定义关闭处理
+
+### 关闭机制
+
+PhoneWebView提供灵活的关闭机制：
+
+#### 1. 默认关闭行为
 ```lua
--- 返回按钮回调
-function webView:onBack(button)
-    -- 自定义返回逻辑
-    PhoneFrameworkCore.returnToHome()
-end
+-- 点击底部关闭控件时自动执行
+webView:performClose()
+```
 
--- 关闭按钮回调
-function webView:onClose()
+#### 2. 自定义关闭回调
+```lua
+-- 在应用或父组件中实现
+function MyApp:onWebViewClose(webView)
     -- 自定义关闭逻辑
-    if self.app and self.app.onDestroy then
-        self.app:onDestroy()
-    end
+    print("应用关闭中...")
+    self:onDestroy()
     PhoneFrameworkCore.returnToHome()
 end
 ```
+
+#### 3. 编程式关闭
+```lua
+-- 应用内部调用关闭
+webView:close()
+```
+
+#### 4. 手势关闭（预留）
+当前版本保留手势检测变量，为后续手势关闭功能做准备。
+
+### setContent 方法使用场景
+
+`setContent` 方法用于动态更换PhoneWebView中的内容组件，适用于以下场景：
+
+#### 1. 多页面应用切换
+```lua
+function MyApp:switchToPage(pageComponent)
+    -- 切换到新页面
+    self.webView:setContent(pageComponent)
+end
+```
+
+#### 2. 动态内容加载
+```lua
+function MyApp:onMenuItemClick(menuItem)
+    local contentPanel = self:createContentForItem(menuItem)
+    self.webView:setContent(contentPanel)
+end
+```
+
+#### 3. 模态对话框显示
+```lua
+function MyApp:showModalDialog()
+    local modalPanel = self:createModalDialog()
+    self.webView:setContent(modalPanel)
+end
+```
+
+#### 4. 数据刷新界面
+```lua
+function MyApp:refreshData(newData)
+    local updatedPanel = self:createUpdatedUI(newData)
+    self.webView:setContent(updatedPanel)
+end
+```
+
+#### 注意事项：
+- `setContent` 会自动清理旧内容并设置新内容
+- 适合需要动态界面切换的复杂应用
+- 单页面应用（如示例应用）通常不需要使用此方法
 
 ## 最佳实践
 

@@ -92,32 +92,18 @@ function PhoneFrameworkCore.openApp(app)
         currentApp.isActive = false
     end
     
-    -- 创建PhoneWebView容器
+    -- 创建PhoneWebView容器（现代化设计）
     local webView = PhoneWebView:new(
         PhoneFrameworkCore.phoneWindow.innerX,
         PhoneFrameworkCore.phoneWindow.innerY,
         PhoneFrameworkCore.phoneWindow.innerWidth,
-        PhoneFrameworkCore.phoneWindow.innerHeight
+        PhoneFrameworkCore.phoneWindow.innerHeight,
+        PhoneFrameworkCore.phoneWindow
     )
-    
-    -- 设置WebView标题
-    webView:setTitle(app.displayName)
     
     -- 关联应用和WebView
     app.webView = webView
     webView.app = app
-    
-    -- 设置WebView回调
-    function webView.panel:onWebViewBack(view)
-        PhoneFrameworkCore.returnToHome()
-    end
-    
-    function webView.panel:onWebViewClose(view)
-        if view.app and view.app.onDestroy then
-            view.app:onDestroy()
-        end
-        PhoneFrameworkCore.returnToHome()
-    end
     
     -- 创建应用内容
     if app.onCreate then
