@@ -57,7 +57,7 @@ function MyApp.App:onCreate(webView)
     contentPanel:addChild(self.mainPanel)
     
     -- 使用drawText绘制文本
-    self.titleText = "我的应用"
+    self.titleText = getText("UI_MyApp_Title")
     self.titleX = 20
     self.titleY = 20
     self.titleWidth = self.mainPanel.width - 40
